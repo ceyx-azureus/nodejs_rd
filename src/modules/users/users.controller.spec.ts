@@ -14,8 +14,18 @@ describe('UsersController', () => {
   });
 
   describe('root', () => {
-    it('should return "Users"', () => {
-      expect(usersController.getUsers()).toBe('Users');
+    it('should return users from jsonplaceholder', async () => {
+      const mockUsers = [{ id: 1, name: 'Leanne Graham' }];
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockUsers,
+      } as any);
+
+      await expect(usersController.getUsers()).resolves.toEqual(mockUsers);
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://jsonplaceholder.typicode.com/users',
+      );
     });
   });
 });
