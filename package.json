@@ -1,0 +1,32 @@
+{
+  "name": "custom_nest",
+  "version": "1.0.0",
+  "description": "1.",
+  "homepage": "https://github.com/ceyx-azureus/nodejs_rd#readme",
+  "bugs": {
+    "url": "https://github.com/ceyx-azureus/nodejs_rd/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ceyx-azureus/nodejs_rd.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "src/main.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "tsx watch src/main.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "5.2.1",
+    "reflect-metadata": "0.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "tsx": "4.21.0",
+    "typescript": "^5.5.4"
+  }
+}
