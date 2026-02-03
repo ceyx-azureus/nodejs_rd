@@ -1,17 +1,18 @@
-import { Controller, Get, UsePipes } from "../../packages/core/http";
-import { LogPipe } from "./pipes/log.pipe";
+import { Controller, Get, Param, ParseIntPipe } from "../../packages/core/http";
+import { inject } from "../../packages/core/di";
+import { UsersService } from "./users.service";
 
 @Controller("/users")
 export class UserController {
+  private usersService = inject(UsersService);
+
   @Get()
   findAll() {
-    return "All users";
+    return this.usersService.findAll();
   }
 
-  @UsePipes(LogPipe)
   @Get(":id")
-  findById(req: any) {
-    console.log("id", req.params.id);
-    return `Find user with id: ${req.params.id}`;
+  findById(@Param("id", ParseIntPipe) id: number) {
+    return this.usersService.getById(id);
   }
 }

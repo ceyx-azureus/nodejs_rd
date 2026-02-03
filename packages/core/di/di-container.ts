@@ -22,3 +22,16 @@ export class Container {
     return Reflect.getMetadata("design:paramtypes", target) || [];
   }
 }
+
+let globalContainer: Container | null = null;
+
+export function setGlobalContainer(container: Container) {
+  globalContainer = container;
+}
+
+export function getGlobalContainer(): Container {
+  if (!globalContainer) {
+    throw new Error("Container not initialized");
+  }
+  return globalContainer;
+}
