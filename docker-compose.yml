@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: db_main-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-db_main}
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - db_main:/var/lib/postgresql/data
+
+volumes:
+  db_main:

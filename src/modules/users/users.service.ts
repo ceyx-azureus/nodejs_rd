@@ -1,18 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { Observable } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Repository } from 'typeorm';
+import { User } from './user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly http: HttpService) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly repository: Repository<User>,
+  ) {}
 
-  getUsers(): Observable<unknown[]> {
-    return this.http.get('https://jsonplaceholder.typicode.com/users').pipe(
-      map((res) => res.data),
-      catchError((e) => {
-        throw 'todo error';
-      }),
-    );
+  getAll(): Promise<User[]> {
+    return this.repository.find();
   }
 }
