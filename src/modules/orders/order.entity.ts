@@ -45,6 +45,7 @@ export class Order {
     length: 120,
     name: 'idempotency_key',
     nullable: true,
+    unique: true,
   })
   idempotencyKey: string | null;
 
