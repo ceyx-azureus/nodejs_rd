@@ -42,3 +42,7 @@
     - stock update
     - commit transaction
   - rollback if error
+
+## From Bonus list:
+
+- added additional safety check: unique(userId, idempotencyKey)

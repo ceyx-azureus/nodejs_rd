@@ -69,7 +69,7 @@ export class OrdersService {
     idempotencyKey: string,
   ): Promise<CreateOrderResult> {
     const existingOrder = await this.repository.findOne({
-      where: { idempotencyKey },
+      where: { idempotencyKey, userId: dto.userId },
       relations: ['orderItems'],
     });
 

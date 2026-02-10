@@ -21,6 +21,9 @@ export enum OrderStatus {
 
 @Entity('orders')
 @Index('idx_orders_user_status_created', ['userId', 'status', 'createdAt'])
+@Index('idx_orders_user_idempotency', ['userId', 'idempotencyKey'], {
+  unique: true,
+})
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -47,7 +50,6 @@ export class Order {
     length: 120,
     name: 'idempotency_key',
     nullable: true,
-    unique: true,
   })
   idempotencyKey: string | null;
 
