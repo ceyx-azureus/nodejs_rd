@@ -7,7 +7,7 @@ SELECT o.id,
        oi.quantity
 FROM orders o
 LEFT JOIN order_items oi ON oi.order_id = o.id
-WHERE o.user_id = '2a415eb9-caaf-4004-a4b0-e0d152c22afc'
+WHERE o.user_id = '2ccd911b-b93e-4bd3-bebc-7013bea76e53'
   AND o.status = 'CREATED'
   AND o.created_at >= '2026-01-01'
   AND o.created_at <= '2026-03-01'

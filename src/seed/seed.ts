@@ -48,33 +48,37 @@ const productsSeed = productNames.map((name, index) => {
 
 const ordersSeed = [
   {
-    id: crypto.randomUUID(),
+    id: '11111111-1111-1111-1111-111111111111',
     orderNumber: 'ORD-0001',
     userEmail: 'alice@example.com',
     status: OrderStatus.PENDING,
     items: [
       {
-        productId: crypto.randomUUID(),
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+        productName: 'iPhone 17 Pro',
         quantity: 1,
       },
       {
-        productId: crypto.randomUUID(),
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
+        productName: 'iPhone 17 Pro Max',
         quantity: 1,
       },
     ],
   },
   {
-    id: crypto.randomUUID(),
+    id: '22222222-2222-2222-2222-222222222222',
     orderNumber: 'ORD-0002',
     userEmail: 'bob@example.com',
     status: OrderStatus.PAID,
     items: [
       {
-        productId: crypto.randomUUID(),
+        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+        productName: 'iPhone Air',
         quantity: 2,
       },
       {
-        productId: crypto.randomUUID(),
+        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
+        productName: 'iPhone 16',
         quantity: 1,
       },
     ],
@@ -102,13 +106,13 @@ async function seed() {
     });
     const usersByEmail = new Map(users.map((user) => [user.email, user]));
 
-    // const names = productsSeed.map((product) => product.name);
-    // const products = await productsRepository.find({
-    //   where: { name: In(names) },
-    // });
-    // const productsByName = new Map(
-    //   products.map((product) => [product.name, product]),
-    // );
+    const names = productsSeed.map((product) => product.name);
+    const products = await productsRepository.find({
+      where: { name: In(names) },
+    });
+    const productsByName = new Map(
+      products.map((product) => [product.name, product]),
+    );
 
     const ordersToUpsert: Array<Partial<Order>> = [];
     const orderItemsToUpsert: Array<Partial<OrderItem>> = [];
@@ -127,19 +131,24 @@ async function seed() {
       });
 
       for (const item of orderSeed.items) {
+        const product = productsByName.get(item.productName);
+        if (!product) {
+          throw new Error(`Missing product: ${item.productName}`);
+        }
         orderItemsToUpsert.push({
           orderId: orderSeed.id,
-          productId: item.productId,
+          productId: product.id,
           quantity: item.quantity,
+          price: product.price,
         });
       }
     }
 
-    if (ordersToUpsert.length > 0) {
+    if (ordersToUpsert.length) {
       await ordersRepository.upsert(ordersToUpsert, ['id']);
     }
 
-    if (orderItemsToUpsert.length > 0) {
+    if (orderItemsToUpsert.length) {
       await orderItemsRepository.upsert(orderItemsToUpsert, ['id']);
     }
   } finally {
