@@ -5,11 +5,12 @@ import {
   Body,
   Headers,
   BadRequestException,
+  Query,
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { OrdersService } from './orders.service';
-import { Order } from './order.entity';
+import { Order, OrderStatus } from './order.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 const UUID_REGEX =
@@ -20,8 +21,39 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
-  getAll(): Promise<Order[]> {
-    return this.ordersService.getAll();
+  getAll(
+    @Query('userId') userId?: string,
+    @Query('status') status?: OrderStatus,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ): Promise<Order[]> {
+    const parsedLimit = Number(limit ?? 20);
+    const parsedOffset = Number(offset ?? 0);
+    const safeLimit =
+      Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 20;
+    const safeOffset =
+      Number.isFinite(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
+
+    const fromDate = from ? new Date(from) : undefined;
+    const toDate = to ? new Date(to) : undefined;
+
+    if (fromDate && Number.isNaN(fromDate.getTime())) {
+      throw new BadRequestException('from must be valid date');
+    }
+
+    if (toDate && Number.isNaN(toDate.getTime())) {
+      throw new BadRequestException('to must be valid date');
+    }
+    return this.ordersService.getAll({
+      userId,
+      status,
+      fromDate,
+      toDate,
+      limit: safeLimit,
+      offset: safeOffset,
+    });
   }
 
   @Post()

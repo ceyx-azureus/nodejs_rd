@@ -21,7 +21,7 @@
     "migration:run": "npm run db:migrate",
     "concurrency:test": "npx cross-env NODE_ENV=example ts-node -r tsconfig-paths/register src/scripts/concurrency-test.ts",
     "prefill:orders": "docker exec -i db_main-postgres psql -U postgres -d db_main < src/scripts/prefill-orders.sql",
-    "explain:before": "docker exec -i db_main-postgres psql -U postgres -d db_main < src/scripts/explain-before.sql",
+    "explain": "docker exec -i db_main-postgres psql -U postgres -d db_main < src/scripts/explain.sql",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",

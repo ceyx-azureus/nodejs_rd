@@ -6,7 +6,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order } from './order.entity';
+import { Order, OrderStatus } from './order.entity';
 import { OrderItem } from './order-item.entity';
 import { Product } from '../products/product.entity';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
@@ -15,6 +15,15 @@ import { CreateOrderDto } from './dto/create-order.dto';
 interface CreateOrderResult {
   order: Order;
   isExisting: boolean;
+}
+
+interface GetOrdersFilter {
+  userId?: string;
+  status?: OrderStatus;
+  fromDate?: Date;
+  toDate?: Date;
+  limit: number;
+  offset: number;
 }
 
 @Injectable()
@@ -27,8 +36,32 @@ export class OrdersService {
     private readonly dataSource: DataSource,
   ) {}
 
-  getAll(): Promise<Order[]> {
-    return this.repository.find();
+  async getAll(filter: GetOrdersFilter): Promise<Order[]> {
+    const qb = this.repository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.orderItems', 'orderItems');
+
+    if (filter.userId) {
+      qb.andWhere('order.userId = :userId', { userId: filter.userId });
+    }
+
+    if (filter.status) {
+      qb.andWhere('order.status = :status', { status: filter.status });
+    }
+
+    if (filter.fromDate) {
+      qb.andWhere('order.createdAt >= :fromDate', { fromDate: filter.fromDate });
+    }
+
+    if (filter.toDate) {
+      qb.andWhere('order.createdAt <= :toDate', { toDate: filter.toDate });
+    }
+
+    return qb
+      .orderBy('order.createdAt', 'DESC')
+      .limit(filter.limit)
+      .offset(filter.offset)
+      .getMany();
   }
 
   async createOrder(
