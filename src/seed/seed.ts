@@ -48,37 +48,33 @@ const productsSeed = productNames.map((name, index) => {
 
 const ordersSeed = [
   {
-    id: '11111111-1111-1111-1111-111111111111',
+    id: crypto.randomUUID(),
     orderNumber: 'ORD-0001',
     userEmail: 'alice@example.com',
     status: OrderStatus.PENDING,
     items: [
       {
-        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
-        productName: 'iPhone 17 Pro',
+        productId: crypto.randomUUID(),
         quantity: 1,
       },
       {
-        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
-        productName: 'iPhone 17 Pro Max',
+        productId: crypto.randomUUID(),
         quantity: 1,
       },
     ],
   },
   {
-    id: '22222222-2222-2222-2222-222222222222',
+    id: crypto.randomUUID(),
     orderNumber: 'ORD-0002',
     userEmail: 'bob@example.com',
     status: OrderStatus.PAID,
     items: [
       {
-        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
-        productName: 'iPhone 17',
+        productId: crypto.randomUUID(),
         quantity: 2,
       },
       {
-        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
-        productName: 'iPhone Air',
+        productId: crypto.randomUUID(),
         quantity: 1,
       },
     ],
@@ -106,13 +102,13 @@ async function seed() {
     });
     const usersByEmail = new Map(users.map((user) => [user.email, user]));
 
-    const names = productsSeed.map((product) => product.name);
-    const products = await productsRepository.find({
-      where: { name: In(names) },
-    });
-    const productsByName = new Map(
-      products.map((product) => [product.name, product]),
-    );
+    // const names = productsSeed.map((product) => product.name);
+    // const products = await productsRepository.find({
+    //   where: { name: In(names) },
+    // });
+    // const productsByName = new Map(
+    //   products.map((product) => [product.name, product]),
+    // );
 
     const ordersToUpsert: Array<Partial<Order>> = [];
     const orderItemsToUpsert: Array<Partial<OrderItem>> = [];
@@ -131,17 +127,10 @@ async function seed() {
       });
 
       for (const item of orderSeed.items) {
-        const product = productsByName.get(item.productName);
-        if (!product) {
-          throw new Error(`Missing product: ${item.productName}`);
-        }
-
         orderItemsToUpsert.push({
-          id: item.id,
           orderId: orderSeed.id,
-          productId: product.id,
+          productId: item.productId,
           quantity: item.quantity,
-          price: product.price,
         });
       }
     }

@@ -62,4 +62,5 @@ src/
 - `docker compose up`
 - `npm run db:migrate`
 - `npm run db:seed`
+- `npm run prefill:orders` - prefill orders table with 100000 rows
 - `npm run start:dev`
