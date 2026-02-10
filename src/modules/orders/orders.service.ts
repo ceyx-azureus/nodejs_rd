@@ -163,7 +163,7 @@ export class OrdersService {
     return queryRunner.manager
       .getRepository(Product)
       .createQueryBuilder('product')
-      .setLock('pessimistic_write_or_fail')
+      .setLock('pessimistic_write')
       .where('product.id IN (:...productIds)', { productIds })
       .getMany();
   }
