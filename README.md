@@ -56,3 +56,11 @@ src/
 - **SWC**: швидша компіляція TypeScript (заміна повільнішого `tsc` у dev/build сценаріях залежно від конфігурації).
 - **`cross-env`**: коректна робота змінних середовища на різних ОС.
 - **Валідація env через Joi**: перевірка `.env` на старті застосунку (щоб падати швидко та зрозуміло при неправильній конфігурації).
+
+## Dev setup
+
+- `docker compose up`
+- `npm run db:migrate`
+- `npm run db:seed`
+- `npm run prefill:orders` - prefill orders table with 100000 rows
+- `npm run start:dev`
