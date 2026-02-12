@@ -1,7 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { UsersModule } from './modules/users';
 import { ConfigModule } from '@nestjs/config';
 import validationSchema from './config/validation.schema';
 import configuration from './config/configuration';
@@ -9,9 +6,12 @@ import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
+import { GraphqlModule } from './modules/graphql/graphql.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
+    GraphqlModule,
     ConfigModule.forRoot({
       validationSchema: validationSchema,
       isGlobal: true,
@@ -36,7 +36,5 @@ import { ConfigService } from '@nestjs/config';
     ProductsModule,
     OrdersModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
