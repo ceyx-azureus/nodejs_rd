@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { GraphqlResolver } from './graphql.resolver';
+import { GraphqlResolver } from './resolvers';
 
 @Module({
   imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: true,
-      playground: true,
+      useFactory: () => ({
+        playground: true,
+        typePaths: ['./src/modules/graphql/schema/**/*.graphql'],
+      }),
     }),
   ],
   providers: [GraphqlResolver],

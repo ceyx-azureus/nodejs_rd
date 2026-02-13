@@ -6,7 +6,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
-import { GraphqlModule } from './modules/graphql/graphql.module';
+import { GraphqlModule } from './modules/graphql';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
