@@ -1,0 +1,10 @@
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type OrdersConnection {
+  nodes: [Order!]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}

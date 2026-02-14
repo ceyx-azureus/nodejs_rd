@@ -30,6 +30,7 @@ import { UsersModule } from './modules/users/users.module';
         database: configService.getOrThrow<string>('DB_NAME'),
         autoLoadEntities: true,
         synchronize: false,
+        logging: true,
       }),
     }),
     UsersModule,

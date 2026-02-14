@@ -17,7 +17,7 @@ interface CreateOrderResult {
   isExisting: boolean;
 }
 
-interface GetOrdersFilter {
+export interface GetOrdersFilter {
   userId?: string;
   status?: OrderStatus;
   fromDate?: Date;
@@ -36,6 +36,36 @@ export class OrdersService {
     private readonly dataSource: DataSource,
   ) {}
 
+  async getAllForResolver(
+    filter: GetOrdersFilter,
+  ): Promise<[Order[], number]> {
+    const qb = this.repository.createQueryBuilder('order');
+
+    if (filter.userId) {
+      qb.andWhere('order.userId = :userId', { userId: filter.userId });
+    }
+
+    if (filter.status) {
+      qb.andWhere('order.status = :status', { status: filter.status });
+    }
+
+    if (filter.fromDate) {
+      qb.andWhere('order.createdAt >= :fromDate', {
+        fromDate: filter.fromDate,
+      });
+    }
+
+    if (filter.toDate) {
+      qb.andWhere('order.createdAt <= :toDate', { toDate: filter.toDate });
+    }
+
+    return qb
+      .orderBy('order.createdAt', 'DESC')
+      .limit(filter.limit)
+      .offset(filter.offset)
+      .getManyAndCount();
+  }
+
   async getAll(filter: GetOrdersFilter): Promise<Order[]> {
     const qb = this.repository
       .createQueryBuilder('order')
@@ -50,7 +80,9 @@ export class OrdersService {
     }
 
     if (filter.fromDate) {
-      qb.andWhere('order.createdAt >= :fromDate', { fromDate: filter.fromDate });
+      qb.andWhere('order.createdAt >= :fromDate', {
+        fromDate: filter.fromDate,
+      });
     }
 
     if (filter.toDate) {

@@ -1,0 +1,10 @@
+input OrdersFilterInput {
+  status: OrderStatus
+  from: String
+  to: String
+}
+
+input OrdersPaginationInput {
+  limit: Int!
+  offset: Int!
+}

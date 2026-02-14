@@ -1,0 +1,17 @@
+enum OrderStatus {
+  CREATED
+  PENDING
+  PAID
+  CANCELLED
+}
+
+type Order {
+  id: ID!
+  orderNumber: String!
+  userId: String!
+  status: OrderStatus!
+  idempotencyKey: String
+  createdAt: String!
+  updatedAt: String!
+  items: [OrderItem!]!
+}
