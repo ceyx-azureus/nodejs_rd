@@ -8,6 +8,7 @@ import {
 } from './resolvers';
 import { OrdersModule } from '../orders/orders.module';
 import { LoadersModule, LoadersFactory } from './loaders';
+import { DateTimeScalar } from './scalars/date-time.scalar';
 
 @Module({
   imports: [
@@ -26,6 +27,6 @@ import { LoadersModule, LoadersFactory } from './loaders';
       }),
     }),
   ],
-  providers: [GraphqlResolver, OrdersResolver, OrderItemsResolver],
+  providers: [GraphqlResolver, OrdersResolver, OrderItemsResolver, DateTimeScalar],
 })
 export class GraphqlModule {}

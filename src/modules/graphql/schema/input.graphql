@@ -1,7 +1,7 @@
 input OrdersFilterInput {
   status: OrderStatus
-  from: String
-  to: String
+  dateFrom: DateTime
+  dateTo: DateTime
 }
 
 input OrdersPaginationInput {

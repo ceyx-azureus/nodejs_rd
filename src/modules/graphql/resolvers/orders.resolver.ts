@@ -18,28 +18,18 @@ export class OrdersResolver {
   @Query('orders')
   async orders(
     @Args('filter')
-    filter?: { status?: OrderStatus; from?: string; to?: string },
+    filter?: { status?: OrderStatus; dateFrom?: Date; dateTo?: Date },
     @Args('pagination') pagination?: { limit: number; offset: number },
   ): Promise<OrdersConnection> {
     const serviceFilter: GetOrdersFilter = {
       limit: pagination?.limit ?? 20,
       offset: pagination?.offset ?? 0,
       status: filter?.status,
-      fromDate: filter?.from ? new Date(filter.from) : undefined,
-      toDate: filter?.to ? new Date(filter.to) : undefined,
+      fromDate: filter?.dateFrom,
+      toDate: filter?.dateTo,
     };
 
     return this.ordersGqlService.getAll(serviceFilter);
-  }
-
-  @ResolveField('createdAt')
-  createdAt(@Parent() order: Order): string {
-    return new Date(order.createdAt).toISOString();
-  }
-
-  @ResolveField('updatedAt')
-  updatedAt(@Parent() order: Order): string {
-    return new Date(order.updatedAt).toISOString();
   }
 
   @ResolveField('items')

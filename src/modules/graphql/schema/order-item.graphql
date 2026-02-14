@@ -1,10 +1,10 @@
 type OrderItem {
   id: ID!
-  orderId: String!
-  productId: String!
+  orderId: ID!
+  productId: ID!
   quantity: Int!
   price: Float!
-  createdAt: String!
-  updatedAt: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
   product: Product!
 }

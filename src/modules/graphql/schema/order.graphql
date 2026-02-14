@@ -8,10 +8,9 @@ enum OrderStatus {
 type Order {
   id: ID!
   orderNumber: String!
-  userId: String!
+  userId: ID!
   status: OrderStatus!
-  idempotencyKey: String
-  createdAt: String!
-  updatedAt: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
   items: [OrderItem!]!
 }
