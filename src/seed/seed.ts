@@ -2,8 +2,7 @@ import { In } from 'typeorm';
 import { dataSource } from '../config/data-source';
 import { User } from '../modules/users/user.entity';
 import { Product } from '../modules/products/product.entity';
-import { Order, OrderStatus } from '../modules/orders/order.entity';
-import { OrderItem } from '../modules/orders/order-item.entity';
+import { Order, OrderStatus, OrderItem } from '../modules/orders/entities';
 
 const usersSeed = [
   { email: 'alice@example.com', firstName: 'Alice', lastName: 'Smith' },

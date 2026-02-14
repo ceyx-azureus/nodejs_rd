@@ -6,18 +6,14 @@ import {
   Parent,
   Context,
 } from '@nestjs/graphql';
-import {
-  OrdersService,
-  GetOrdersFilter,
-  OrdersConnection,
-} from '../../orders/orders.service';
-import { Order, OrderStatus } from '../../orders/order.entity';
-import { OrderItem } from '../../orders/order-item.entity';
+import { GetOrdersFilter, OrdersConnection } from '../../orders/interfaces';
+import { OrdersGqlService } from '../../orders/services';
+import { Order, OrderStatus, OrderItem } from '../../orders/entities';
 import type { GraphQLContext } from '../loaders';
 
 @Resolver('Order')
 export class OrdersResolver {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersGqlService: OrdersGqlService) {}
 
   @Query('orders')
   async orders(
@@ -33,7 +29,17 @@ export class OrdersResolver {
       toDate: filter?.to ? new Date(filter.to) : undefined,
     };
 
-    return this.ordersService.getAllForResolver(serviceFilter);
+    return this.ordersGqlService.getAll(serviceFilter);
+  }
+
+  @ResolveField('createdAt')
+  createdAt(@Parent() order: Order): string {
+    return new Date(order.createdAt).toISOString();
+  }
+
+  @ResolveField('updatedAt')
+  updatedAt(@Parent() order: Order): string {
+    return new Date(order.updatedAt).toISOString();
   }
 
   @ResolveField('items')

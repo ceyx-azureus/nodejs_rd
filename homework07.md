@@ -87,6 +87,10 @@ query {
 
 ### sql logs -> without N+1
 
+what changed:
+
+- dataLoader + sql batch IN запити на order_items та products
+
 ```
 query: SELECT "order"."id" AS "order_id", "order"."order_number" AS "order_order_number", "order"."user_id" AS "order_user_id", "order"."status" AS "order_status", "order"."idempotency_key" AS "order_idempotency_key", "order"."created_at" AS "order_created_at", "order"."updated_at" AS "order_updated_at" FROM "orders" "order" WHERE "order"."status" = $1 ORDER BY "order"."created_at" DESC LIMIT 5 OFFSET 10 -- PARAMETERS: ["PAID"]
 ----------

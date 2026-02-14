@@ -1,5 +1,5 @@
 import { Resolver, ResolveField, Parent, Context } from '@nestjs/graphql';
-import { OrderItem } from '../../orders/order-item.entity';
+import { OrderItem } from '../../orders/entities';
 import { Product } from '../../products/product.entity';
 import type { GraphQLContext } from '../loaders';
 
