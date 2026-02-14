@@ -1,21 +1,28 @@
 import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { GraphqlResolver, OrdersResolver, OrderItemsResolver } from './resolvers';
+import {
+  GraphqlResolver,
+  OrdersResolver,
+  OrderItemsResolver,
+} from './resolvers';
 import { OrdersModule } from '../orders/orders.module';
-import { OrderItem } from '../orders/order-item.entity';
-import { Product } from '../products/product.entity';
+import { LoadersModule, LoadersFactory } from './loaders';
 
 @Module({
   imports: [
     OrdersModule,
-    TypeOrmModule.forFeature([OrderItem, Product]),
+    LoadersModule,
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      useFactory: () => ({
+      imports: [LoadersModule],
+      inject: [LoadersFactory],
+      useFactory: (factory: LoadersFactory) => ({
         playground: true,
         typePaths: ['./src/modules/graphql/schema/**/*.graphql'],
+        context: () => ({
+          loaders: factory.createLoaders(),
+        }),
       }),
     }),
   ],

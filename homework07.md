@@ -70,3 +70,36 @@ query: SELECT "OrderItem"."id" AS "OrderItem_id", "OrderItem"."order_id" AS "Ord
 ## 4.2 data loader
 
 ## 4.3
+
+### query для перевірки
+
+```
+query {
+  orders(filter:{status: PAID}, pagination: {limit: 5, offset: 10}) {
+    totalCount,
+    nodes{
+      id,
+      createdAt, items{product{name}}
+    }
+  }
+}
+```
+
+### sql logs -> without N+1
+
+```
+query: SELECT "order"."id" AS "order_id", "order"."order_number" AS "order_order_number", "order"."user_id" AS "order_user_id", "order"."status" AS "order_status", "order"."idempotency_key" AS "order_idempotency_key", "order"."created_at" AS "order_created_at", "order"."updated_at" AS "order_updated_at" FROM "orders" "order" WHERE "order"."status" = $1 ORDER BY "order"."created_at" DESC LIMIT 5 OFFSET 10 -- PARAMETERS: ["PAID"]
+----------
+query: SELECT COUNT(1) AS "cnt" FROM "orders" "order" WHERE "order"."status" = $1 -- PARAMETERS: ["PAID"]
+----------
+query: SELECT "OrderItem"."id" AS "OrderItem_id", "OrderItem"."order_id" AS "OrderItem_order_id", "OrderItem"."product_id" AS "OrderItem_product_id", "OrderItem"."quantity" AS "OrderItem_quantity", "OrderItem"."price" AS "OrderItem_price", "OrderItem"."created_at" AS "OrderItem_created_at", "OrderItem"."updated_at" AS "OrderItem_updated_at" FROM "order_items" "OrderItem" WHERE (("OrderItem"."order_id" IN ($1, $2, $3, $4, $5))) -- PARAMETERS: ["c526a5f8-602f-4fe9-a185-4d23c3b754ea","609de063-7cd3-4fe0-b413-118c95c112e4","92896af1-709e-4eb9-8cd6-756dda58b3ed","3ec14478-5399-418a-8835-b318da475a82","c316527d-6e0b-428e-b5b0-dec1b2e4c1d8"]
+----------
+Successfully compiled src/modules/orders/orders.service.ts with swc (28.5ms)
+```
+
+## BONUS
+
+- OrdersConnection -> DONE
+- keyset -------
+- max limit 50 -> DONE
+- OrderItemsLoader -> DONE
