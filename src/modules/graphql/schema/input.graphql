@@ -1,0 +1,10 @@
+input OrdersFilterInput {
+  status: OrderStatus
+  dateFrom: DateTime
+  dateTo: DateTime
+}
+
+input OrdersPaginationInput {
+  limit: Int!
+  offset: Int!
+}

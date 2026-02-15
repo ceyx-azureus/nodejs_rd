@@ -9,8 +9,8 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { OrdersService } from './orders.service';
-import { Order, OrderStatus } from './order.entity';
+import { OrdersService } from './services/orders.service';
+import { Order, OrderStatus } from './entities';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 const UUID_REGEX =

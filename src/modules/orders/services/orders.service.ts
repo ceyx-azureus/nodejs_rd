@@ -4,27 +4,14 @@ import {
   NotFoundException,
   InternalServerErrorException,
   HttpException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order, OrderStatus } from './order.entity';
-import { OrderItem } from './order-item.entity';
-import { Product } from '../products/product.entity';
+import { Order, OrderItem } from '../entities';
+import { Product } from '../../products/product.entity';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
-import { CreateOrderDto } from './dto/create-order.dto';
-
-interface CreateOrderResult {
-  order: Order;
-  isExisting: boolean;
-}
-
-interface GetOrdersFilter {
-  userId?: string;
-  status?: OrderStatus;
-  fromDate?: Date;
-  toDate?: Date;
-  limit: number;
-  offset: number;
-}
+import { CreateOrderDto } from '../dto/create-order.dto';
+import { CreateOrderResult, GetOrdersFilter } from '../interfaces';
 
 @Injectable()
 export class OrdersService {
@@ -50,7 +37,9 @@ export class OrdersService {
     }
 
     if (filter.fromDate) {
-      qb.andWhere('order.createdAt >= :fromDate', { fromDate: filter.fromDate });
+      qb.andWhere('order.createdAt >= :fromDate', {
+        fromDate: filter.fromDate,
+      });
     }
 
     if (filter.toDate) {

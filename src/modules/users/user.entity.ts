@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import type { Order } from '../orders/order.entity';
+import type { Order } from '../orders/entities';
 
 @Entity('users')
 export class User {
