@@ -1,12 +1,32 @@
 import { In } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { dataSource } from '../config/data-source';
-import { User } from '../modules/users/user.entity';
+import { User, UserRole } from '../modules/users/user.entity';
 import { Product } from '../modules/products/product.entity';
 import { Order, OrderStatus, OrderItem } from '../modules/orders/entities';
 
 const usersSeed = [
-  { email: 'alice@example.com', firstName: 'Alice', lastName: 'Smith' },
-  { email: 'bob@example.com', firstName: 'Bob', lastName: 'Johnson' },
+  {
+    email: 'admin@aloe.com',
+    firstName: 'Admin',
+    lastName: 'User',
+    role: UserRole.ADMIN,
+    password: 'Admin1234!',
+  },
+  {
+    email: 'alice@aloe.com',
+    firstName: 'Alice',
+    lastName: 'usr',
+    role: UserRole.USER,
+    password: 'Alice1234!',
+  },
+  {
+    email: 'bob@aloe.com',
+    firstName: 'Bob',
+    lastName: 'usr',
+    role: UserRole.USER,
+    password: 'Bob12345!',
+  },
 ];
 
 const productNames = [
@@ -97,7 +117,20 @@ async function seed() {
     const ordersRepository = dataSource.getRepository(Order);
     const orderItemsRepository = dataSource.getRepository(OrderItem);
 
-    await usersRepository.upsert(usersSeed, ['email']);
+    for (const userSeed of usersSeed) {
+      const passwordHash = await bcrypt.hash(userSeed.password, 10);
+      await usersRepository.upsert(
+        {
+          email: userSeed.email,
+          firstName: userSeed.firstName,
+          lastName: userSeed.lastName,
+          role: userSeed.role,
+          passwordHash,
+        },
+        ['email'],
+      );
+    }
+
     await productsRepository.upsert(productsSeed, ['name']);
 
     const users = await usersRepository.find({

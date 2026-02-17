@@ -7,20 +7,26 @@ import {
   BadRequestException,
   Query,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { OrdersService } from './services/orders.service';
 import { Order, OrderStatus } from './entities';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ScopesGuard } from '../auth/guards/scopes.guard';
+import { RequireScopes } from '../auth/decorators/scopes.decorator';
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 @Controller('orders')
+@UseGuards(JwtAuthGuard, ScopesGuard)
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
+  @RequireScopes('order:read')
   getAll(
     @Query('userId') userId?: string,
     @Query('status') status?: OrderStatus,
@@ -57,6 +63,7 @@ export class OrdersController {
   }
 
   @Post()
+  @RequireScopes('order:create')
   async createOrder(
     @Body() dto: CreateOrderDto,
     @Headers('idempotency-key') idempotencyKey: string,
