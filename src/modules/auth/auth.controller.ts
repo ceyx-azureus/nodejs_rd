@@ -2,7 +2,6 @@ import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { RefreshDto } from './dto/refresh.dto';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 
@@ -19,13 +18,10 @@ export class AuthController {
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
-  // TODO: refactor -> less params
+
   @Post('refresh')
   @UseGuards(JwtRefreshGuard)
-  refresh(
-    @Body() _dto: RefreshDto,
-    @CurrentUser() user: { id: string; email: string; role: string },
-  ) {
+  refresh(@CurrentUser() user: { id: string; email: string; role: string }) {
     return this.authService.refresh(user.id);
   }
 }

@@ -11,8 +11,9 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { OrdersService } from './services/orders.service';
-import { Order, OrderStatus } from './entities';
+import { Order } from './entities';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { GetOrdersQueryDto } from './dto/get-orders-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ScopesGuard } from '../auth/guards/scopes.guard';
 import { RequireScopes } from '../auth/decorators/scopes.decorator';
@@ -27,38 +28,14 @@ export class OrdersController {
 
   @Get()
   @RequireScopes('order:read')
-  getAll(
-    @Query('userId') userId?: string,
-    @Query('status') status?: OrderStatus,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-  ): Promise<Order[]> {
-    const parsedLimit = Number(limit ?? 20);
-    const parsedOffset = Number(offset ?? 0);
-    const safeLimit =
-      Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 20;
-    const safeOffset =
-      Number.isFinite(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
-
-    const fromDate = from ? new Date(from) : undefined;
-    const toDate = to ? new Date(to) : undefined;
-
-    if (fromDate && Number.isNaN(fromDate.getTime())) {
-      throw new BadRequestException('from must be valid date');
-    }
-
-    if (toDate && Number.isNaN(toDate.getTime())) {
-      throw new BadRequestException('to must be valid date');
-    }
+  getAll(@Query() query: GetOrdersQueryDto): Promise<Order[]> {
     return this.ordersService.getAll({
-      userId,
-      status,
-      fromDate,
-      toDate,
-      limit: safeLimit,
-      offset: safeOffset,
+      userId: query.userId,
+      status: query.status,
+      fromDate: query.from ? new Date(query.from) : undefined,
+      toDate: query.to ? new Date(query.to) : undefined,
+      limit: query.limit ?? 20,
+      offset: query.offset ?? 0,
     });
   }
 

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { ProductService } from './products.service';
 import { Product } from './product.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -14,5 +14,11 @@ export class ProductsController {
   @RequireScopes('product:read')
   getAll(): Promise<Product[]> {
     return this.productService.getAll();
+  }
+
+  @Get(':id')
+  @RequireScopes('product:read')
+  getById(@Param('id', ParseUUIDPipe) id: string): Promise<Product> {
+    return this.productService.getById(id);
   }
 }

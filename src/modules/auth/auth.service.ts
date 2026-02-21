@@ -38,7 +38,6 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
-    console.log('------- user: ', user);
     if (!user || !user.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -66,8 +65,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
   }
-  // TODO: refactor -> pass object instead of separate parameters
-  // TODO: refactor -> extract this.jwtService.signAsync calls to separate method
+
   private async issueTokenPair(userId: string, email: string, role: UserRole) {
     const scopes = ROLE_SCOPES[role] || [];
     const payload = { sub: userId, email, role, scopes };
@@ -75,11 +73,17 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.configService.getOrThrow<string>('JWT_SECRET'),
-        expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN', '15m'),
+        expiresIn: this.configService.get(
+          'JWT_ACCESS_EXPIRES_IN',
+          (process.env.JWT_ACCESS_EXPIRES_IN as any) || '15m',
+        ),
       }),
       this.jwtService.signAsync(payload, {
         secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+        expiresIn: this.configService.get(
+          'JWT_REFRESH_EXPIRES_IN',
+          (process.env.JWT_REFRESH_EXPIRES_IN as any) || '7d',
+        ),
       }),
     ]);
 

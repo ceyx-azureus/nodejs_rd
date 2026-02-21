@@ -34,6 +34,7 @@ export const ROLE_SCOPES: Record<UserRole, Permission[]> = {
     `${Resource.ORDER}:${Action.CREATE}`,
     `${Resource.ORDER}:${Action.READ}`,
     `${Resource.USER}:${Action.READ}`,
+    `${Resource.FILE}:${Action.CREATE}`,
     `${Resource.FILE}:${Action.READ}`,
   ],
 };

@@ -28,6 +28,9 @@ export class Product {
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 
+  @Column({ name: 'image_file_id', nullable: true })
+  imageFileId?: string;
+
   @OneToMany('OrderItem', 'product')
   orderItems: OrderItem[];
 }

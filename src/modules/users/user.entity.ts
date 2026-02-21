@@ -21,7 +21,12 @@ export class User {
   @Column({ unique: true, type: 'varchar', length: 320 })
   email: string;
 
-  @Column({ name: 'password_hash', type: 'varchar', length: 72, nullable: true })
+  @Column({
+    name: 'password_hash',
+    type: 'varchar',
+    length: 72,
+    nullable: true,
+  })
   passwordHash: string;
 
   @Column({
@@ -42,6 +47,9 @@ export class User {
 
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
+
+  @Column({ name: 'avatar_id', nullable: true })
+  avatarFileId?: string;
 
   @OneToMany('Order', 'user')
   orders: Order[];
