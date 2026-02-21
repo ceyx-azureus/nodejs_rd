@@ -8,6 +8,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { GraphqlModule } from './modules/graphql';
 import { UsersModule } from './modules/users/users.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { FilesModule } from './modules/files/files.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     ProductsModule,
     OrdersModule,
+    AuthModule,
+    FilesModule,
   ],
 })
 export class AppModule {}
