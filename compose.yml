@@ -1,0 +1,205 @@
+networks:
+  internal:
+    internal: true
+  public:
+
+volumes:
+  pg_data:
+  minio_data:
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-db_main}
+    # No ports — only reachable via internal network
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-db_main}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '0.50'
+        reservations:
+          memory: 64m
+          cpus: '0.10'
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - '${MINIO_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - minio_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '0.50'
+        reservations:
+          memory: 128m
+          cpus: '0.10'
+
+  # docker compose up app-dev
+  app-dev:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    restart: on-failure
+    environment:
+      NODE_ENV: development
+      PORT: ${PORT:-3000}
+      NODE_OPTIONS: --max-old-space-size=600
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-db_main}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-45m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-uploads}
+      MINIO_REGION: ${MINIO_REGION:-eu-central-1}
+    networks:
+      - internal
+      - public
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+          cpus: '1.00'
+        reservations:
+          memory: 256m
+          cpus: '0.25'
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    restart: no
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-db_main}
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '0.50'
+        reservations:
+          memory: 128m
+          cpus: '0.10'
+
+  seed:
+    build:
+      context: .
+      target: seed
+    restart: no
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-db_main}
+    networks:
+      - internal
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '0.50'
+        reservations:
+          memory: 128m
+          cpus: '0.10'
+
+  api:
+    build:
+      context: .
+      target: prod-distroless
+    restart: unless-stopped
+    ports:
+      - '8080:3000'
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=400
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-db_main}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-3d}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-uploads}
+      MINIO_REGION: ${MINIO_REGION:-eu-central-1}
+    networks:
+      - internal
+      - public
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '1.00'
+        reservations:
+          memory: 256m
+          cpus: '0.25'
