@@ -1,0 +1,48 @@
+# Development overrides — merged on top of compose.yml
+# Usage: docker compose -f compose.yml -f compose.dev.yml up --build
+#
+# Secrets setup (first time):
+#   cp secrets/jwt_secret.txt.example         secrets/jwt_secret.txt
+#   cp secrets/jwt_refresh_secret.txt.example secrets/jwt_refresh_secret.txt
+#   cp secrets/db_password.txt.example        secrets/db_password.txt
+#   cp .env.example .env   # then fill in real values
+
+secrets:
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
+  jwt_refresh_secret:
+    file: ./secrets/jwt_refresh_secret.txt
+  db_password:
+    file: ./secrets/db_password.txt
+
+services:
+  postgres:
+    env_file: .env
+
+  minio:
+    env_file: .env
+
+  rabbitmq:
+    env_file: .env
+
+  migrate:
+    env_file: .env
+
+  seed:
+    env_file: .env
+
+  app-dev:
+    env_file: .env
+    init: true
+    secrets:
+      - jwt_secret
+      - jwt_refresh_secret
+      - db_password
+
+  api:
+    env_file: .env
+    init: true
+    secrets:
+      - jwt_secret
+      - jwt_refresh_secret
+      - db_password

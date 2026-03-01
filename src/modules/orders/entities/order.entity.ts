@@ -17,6 +17,7 @@ export enum OrderStatus {
   PENDING = 'PENDING',
   PAID = 'PAID',
   CANCELLED = 'CANCELLED',
+  PROCESSED = 'PROCESSED',
 }
 
 @Entity('orders')
@@ -52,6 +53,9 @@ export class Order {
     nullable: true,
   })
   idempotencyKey: string | null;
+
+  @Column({ name: 'processed_at', type: 'timestamp', nullable: true })
+  processedAt: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
