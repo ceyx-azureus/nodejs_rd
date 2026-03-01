@@ -22,6 +22,9 @@ services:
   minio:
     env_file: .env
 
+  rabbitmq:
+    env_file: .env
+
   migrate:
     env_file: .env
 

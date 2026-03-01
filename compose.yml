@@ -6,6 +6,7 @@ networks:
 volumes:
   pg_data:
   minio_data:
+  rabbitmq_data:
 
 services:
   postgres:
@@ -27,6 +28,33 @@ services:
           'pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-db_main}',
         ]
       interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '0.50'
+        reservations:
+          memory: 64m
+          cpus: '0.10'
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 10s
       timeout: 5s
       retries: 10
     deploy:
@@ -95,6 +123,10 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-uploads}
       MINIO_REGION: ${MINIO_REGION:-eu-central-1}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
+      RABBITMQ_ORDERS_QUEUE: ${RABBITMQ_ORDERS_QUEUE:-orders.process}
+      RABBITMQ_DLQ: ${RABBITMQ_DLQ:-orders.dlq}
+      MAX_RETRY_ATTEMPTS: ${MAX_RETRY_ATTEMPTS:-3}
     networks:
       - internal
       - public
@@ -102,6 +134,8 @@ services:
       postgres:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     deploy:
       resources:
@@ -187,6 +221,10 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-uploads}
       MINIO_REGION: ${MINIO_REGION:-eu-central-1}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
+      RABBITMQ_ORDERS_QUEUE: ${RABBITMQ_ORDERS_QUEUE:-orders.process}
+      RABBITMQ_DLQ: ${RABBITMQ_DLQ:-orders.dlq}
+      MAX_RETRY_ATTEMPTS: ${MAX_RETRY_ATTEMPTS:-3}
     networks:
       - internal
       - public
@@ -195,6 +233,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
     deploy:
       resources:
         limits:

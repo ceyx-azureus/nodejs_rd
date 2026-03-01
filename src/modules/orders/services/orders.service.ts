@@ -12,15 +12,20 @@ import { Product } from '../../products/product.entity';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { CreateOrderResult, GetOrdersFilter } from '../interfaces';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectRepository(Order)
     private readonly repository: Repository<Order>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly dataSource: DataSource,
+    private readonly amqpConnection: AmqpConnection,
   ) {}
 
   async getAll(filter: GetOrdersFilter): Promise<Order[]> {
@@ -132,6 +137,29 @@ export class OrdersService {
       await queryRunner.commitTransaction();
 
       savedOrder.orderItems = orderItems;
+
+      const message = {
+        messageId: randomUUID(),
+        orderId: savedOrder.id,
+        createdAt: new Date().toISOString(),
+        attempt: 0,
+        correlationId: randomUUID(),
+        producer: 'orders-api',
+        eventName: 'order.created',
+      };
+
+      await this.amqpConnection.publish(
+        'orders.exchange',
+        'order.process',
+        message,
+      );
+
+      this.logger.log({
+        event: 'order.published',
+        orderId: savedOrder.id,
+        messageId: message.messageId,
+      });
+
       return { order: savedOrder, isExisting: false };
     } catch (error) {
       await queryRunner.rollbackTransaction();

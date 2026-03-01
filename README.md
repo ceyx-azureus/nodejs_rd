@@ -59,11 +59,67 @@ src/
 
 ## Dev setup
 
-- `docker compose up`
-- `npm run db:migrate`
-- `npm run db:seed`
-- `npm run prefill:orders` - prefill orders table with 100000 rows
-- `npm run start:dev`
+```bash
+docker compose up -d           # starts postgres, minio, rabbitmq
+npm run db:migrate             # runs all migrations (including processed_messages)
+npm run db:seed
+npm run prefill:orders         # prefill orders table with 100000 rows
+npm run start:dev
+```
+
+RabbitMQ Management UI: http://localhost:15672 (guest / guest)
+
+---
+
+## RabbitMQ — Async Orders Workflow
+
+### Topology
+
+```
+Producer (POST /orders)
+  └─► orders.exchange  [direct]
+        ├─► routing key: order.process  ──► orders.process queue  ──► Worker (consumer)
+        └─► routing key: order.dlq      ──► orders.dlq queue
+```
+
+**Exchange:** `orders.exchange` (direct)
+**Queues:**
+- `orders.process` — main processing queue
+- `orders.dlq` — dead-letter queue (messages that exhausted retries)
+
+### Demo Scenarios
+
+**1. Happy path**
+```bash
+# 1. POST /orders → returns { id, status: "PENDING" }
+# 2. Worker picks it up, inserts into processed_messages, updates order status → PROCESSED
+# 3. GET /orders?status=PROCESSED — order appears
+```
+
+**2. Retry simulation**
+```
+In OrdersConsumerService.handleMessage() temporarily add:
+  if (attempt < 2) throw new Error('simulated failure');
+
+POST /orders — watch logs:
+  { result: 'retry', attempt: 1 }
+  { result: 'retry', attempt: 2 }
+  { result: 'success', attempt: 2 }
+```
+
+**3. DLQ (Dead-Letter Queue)**
+```
+Set MAX_RETRY_ATTEMPTS=3 and throw an unconditional error in the handler.
+After 3 retries the message lands in orders.dlq.
+Check http://localhost:15672 → Queues → orders.dlq → Get messages.
+```
+
+**4. Idempotency guard**
+```
+# Publish the same messageId twice (e.g. via RabbitMQ Management UI or direct amqplib publish).
+# Second delivery logs: { result: 'duplicate, skipping' }
+# DB has exactly one row in processed_messages for that messageId.
+```
 
 ---
 
