@@ -64,3 +64,97 @@ src/
 - `npm run db:seed`
 - `npm run prefill:orders` - prefill orders table with 100000 rows
 - `npm run start:dev`
+
+---
+
+## Docker
+
+### Перший запуск (налаштування секретів)
+
+```bash
+cp .env.example .env                  # заповніть реальними значеннями
+
+# Секрети для Docker Compose secrets
+cp secrets/jwt_secret.txt.example         secrets/jwt_secret.txt
+cp secrets/jwt_refresh_secret.txt.example secrets/jwt_refresh_secret.txt
+cp secrets/db_password.txt.example        secrets/db_password.txt
+# Заповніть кожен файл реальним значенням
+```
+
+### 6.1 Команди запуску
+
+**Dev (hot reload, bind-mount, env з .env):**
+
+```bash
+docker compose -f compose.yml -f compose.dev.yml up --build app-dev
+```
+
+**Prod-like (distroless, non-root, без .env у контейнері):**
+
+```bash
+docker compose -f compose.yml up --build
+```
+
+**Міграції / seed (one-off jobs):**
+
+```bash
+docker compose -f compose.yml run --rm migrate
+docker compose -f compose.yml run --rm seed
+```
+
+---
+
+### Оптимізація
+
+```
+$ docker image ls --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | grep nodejs_rd
+
+REPOSITORY                  TAG       SIZE
+nodejs_rd-prod-distroless   latest    426MB
+nodejs_rd-prod              latest    561MB
+nodejs_rd-seed              latest    561MB
+nodejs_rd-migrate           latest    561MB
+nodejs_rd-app-dev           latest    822MB
+```
+
+```
+$ docker history nodejs_rd-prod
+
+CREATED BY                                        SIZE
+CMD ["node" "dist/main"]                          0B
+EXPOSE [3000/tcp]                                 0B
+USER appuser                                      0B
+RUN groupadd --system appgroup && useradd ...     41kB
+COPY /app/dist ./dist                             737kB     ← тільки скомпільований код
+COPY /app/node_modules ./node_modules             191MB     ← тільки prod deps (без devDeps)
+WORKDIR /app                                      8kB
+<node:22-slim base layers>                        ~158MB
+```
+
+**Висновок: чому `prod-distroless` менший і безпечніший за `prod`:**
+
+|                       | `app-dev`     | `prod`       | `prod-distroless` |
+| --------------------- | ------------- | ------------ | ----------------- |
+| Розмір                | **822 MB**    | **561 MB**   | **426 MB**        |
+| Shell                 | ✅ bash       | ✅ bash      | ❌ відсутній      |
+| devDependencies       | ✅ є          | ❌ відсутні  | ❌ відсутні       |
+| Вихідний код (`src/`) | ✅ bind-mount | ❌ відсутній | ❌ відсутній      |
+| OS утиліти            | ✅ є          | часткові     | ❌ мінімум        |
+| Attack surface        | висока        | середня      | **мінімальна**    |
+
+`prod-distroless` на **136 MB менший** за `prod` завдяки відсутності shell, пакетного менеджера apt та OS-утиліт.
+Без shell неможливо виконати довільні команди через RCE-вразливість — навіть якщо атакуючий отримає доступ до контейнера, зробити `/bin/sh` він не зможе.
+
+---
+
+### non-root
+
+- appuser in dockerfile
+
+**`prod` (node:22-slim) — перевірка через `id`:**
+
+```bash
+$ docker run --rm --entrypoint id nodejs_rd-prod
+
+uid=999(appuser) gid=999(appgroup) groups=999(appgroup)
+```
