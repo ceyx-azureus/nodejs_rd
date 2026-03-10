@@ -11,6 +11,6 @@ export class ProcessedMessage {
   @CreateDateColumn({ name: 'processed_at' })
   processedAt: Date;
 
-  @Column({ name: 'handler', length: 100, nullable: true })
+  @Column({ name: 'handler', type: 'varchar', length: 100, nullable: true })
   handler: string | null;
 }
