@@ -15,6 +15,10 @@ const validationSchema = Joi.object({
   MINIO_BUCKET: Joi.string().required(),
   MINIO_REGION: Joi.string().default('eu-central-1'),
   CLOUDFRONT_BASE_URL: Joi.string().optional(),
+  RABBITMQ_URL: Joi.string().default('amqp://guest:guest@localhost:5672'),
+  RABBITMQ_ORDERS_QUEUE: Joi.string().default('orders.process'),
+  RABBITMQ_DLQ: Joi.string().default('orders.dlq'),
+  MAX_RETRY_ATTEMPTS: Joi.number().default(3),
 });
 
 export default validationSchema;

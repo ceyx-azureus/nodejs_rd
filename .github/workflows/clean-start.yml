@@ -1,0 +1,60 @@
+name: Clean-start
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/migrations/**'
+      - 'src/database/seeds/**'
+      - 'compose.yml'
+      - 'Dockerfile'
+  pull_request:
+    paths:
+      - 'src/migrations/**'
+      - 'src/database/seeds/**'
+      - 'compose.yml'
+      - 'Dockerfile'
+  workflow_dispatch:
+
+jobs:
+  clean-start:
+    name: Empty DB → migrate → seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create secrets files
+        run: |
+          mkdir -p secrets
+          echo "dev-jwt-secret"         > secrets/jwt_secret.txt
+          echo "dev-jwt-refresh-secret" > secrets/jwt_refresh_secret.txt
+          echo "postgres"               > secrets/db_password.txt
+
+      - name: Build images
+        run: docker compose build migrate seed
+
+      - name: Start infrastructure (fresh volumes)
+        run: docker compose up -d postgres rabbitmq minio
+
+      - name: Wait for postgres to be healthy
+        run: |
+          for i in $(seq 1 30); do
+            docker compose ps postgres | grep -q "healthy" && break
+            echo "Waiting for postgres... ($i/30)"
+            sleep 3
+          done
+          docker compose ps postgres | grep -q "healthy" || (echo "postgres never became healthy" && exit 1)
+
+      - name: Run migrations (empty DB)
+        run: |
+          docker compose run --rm migrate
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Run seed
+        run: docker compose run --rm seed
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

@@ -36,6 +36,7 @@ FROM node:22-slim AS prod
 WORKDIR /app
 COPY --from=deps-prod /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/src/modules/graphql/schema ./src/modules/graphql/schema
 
 RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 USER appuser
@@ -48,6 +49,7 @@ FROM gcr.io/distroless/nodejs22-debian12:nonroot AS prod-distroless
 WORKDIR /app
 COPY --from=deps-prod /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/src/modules/graphql/schema ./src/modules/graphql/schema
 
 EXPOSE 3000
 CMD ["dist/main"]

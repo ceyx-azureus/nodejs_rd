@@ -19,7 +19,7 @@ import { DateTimeScalar } from './scalars/date-time.scalar';
       imports: [LoadersModule],
       inject: [LoadersFactory],
       useFactory: (factory: LoadersFactory) => ({
-        playground: true,
+        playground: false,
         typePaths: ['./src/modules/graphql/schema/**/*.graphql'],
         context: () => ({
           loaders: factory.createLoaders(),
@@ -27,6 +27,11 @@ import { DateTimeScalar } from './scalars/date-time.scalar';
       }),
     }),
   ],
-  providers: [GraphqlResolver, OrdersResolver, OrderItemsResolver, DateTimeScalar],
+  providers: [
+    GraphqlResolver,
+    OrdersResolver,
+    OrderItemsResolver,
+    DateTimeScalar,
+  ],
 })
 export class GraphqlModule {}

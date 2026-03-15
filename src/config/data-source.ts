@@ -13,4 +13,5 @@ export const dataSource = new DataSource({
   entities: isCompiled ? ['dist/**/*.entity.js'] : ['src/**/*.entity{.ts,.js}'],
   migrations: isCompiled ? ['dist/migrations/*.js'] : ['src/migrations/*{.ts,.js}'],
   synchronize: false,
+  migrationsTransactionMode: 'each',
 });
