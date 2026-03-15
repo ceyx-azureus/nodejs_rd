@@ -67,6 +67,21 @@ npm run prefill:orders         # prefill orders table with 100000 rows
 npm run start:dev
 ```
 
+## Clean-start
+
+Перевіряє, що порожня БД проходить увесь ланцюжок `migrate > seed > start` без помилок.
+
+```bash
+# 1. Скинути стан
+docker compose down -v
+
+# 2. Підняти інфраструктуру + міграції + seed одним кроком
+docker compose up --build --abort-on-container-exit --exit-code-from seed migrate seed
+
+# 3. Переконатися, що всі сервіси стартують
+docker compose up --build api
+```
+
 RabbitMQ Management UI: http://localhost:15672 (guest / guest)
 
 ---
@@ -84,12 +99,14 @@ Producer (POST /orders)
 
 **Exchange:** `orders.exchange` (direct)
 **Queues:**
+
 - `orders.process` — main processing queue
 - `orders.dlq` — dead-letter queue (messages that exhausted retries)
 
 ### Demo Scenarios
 
 **1. Happy path**
+
 ```bash
 # 1. POST /orders → returns { id, status: "PENDING" }
 # 2. Worker picks it up, inserts into processed_messages, updates order status → PROCESSED
@@ -97,6 +114,7 @@ Producer (POST /orders)
 ```
 
 **2. Retry simulation**
+
 ```
 In OrdersConsumerService.handleMessage() temporarily add:
   if (attempt < 2) throw new Error('simulated failure');
@@ -108,6 +126,7 @@ POST /orders — watch logs:
 ```
 
 **3. DLQ (Dead-Letter Queue)**
+
 ```
 Set MAX_RETRY_ATTEMPTS=3 and throw an unconditional error in the handler.
 After 3 retries the message lands in orders.dlq.
@@ -115,6 +134,7 @@ Check http://localhost:15672 → Queues → orders.dlq → Get messages.
 ```
 
 **4. Idempotency guard**
+
 ```
 # Publish the same messageId twice (e.g. via RabbitMQ Management UI or direct amqplib publish).
 # Second delivery logs: { result: 'duplicate, skipping' }
