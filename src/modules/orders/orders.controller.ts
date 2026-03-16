@@ -55,6 +55,6 @@ export class OrdersController {
     const result = await this.ordersService.createOrder(dto, idempotencyKey);
 
     const statusCode = result.isExisting ? 200 : 201;
-    return res.status(statusCode).json(result.order);
+    return res.status(statusCode).json({ ...result.order, paymentId: result.paymentId });
   }
 }

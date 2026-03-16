@@ -37,6 +37,7 @@ WORKDIR /app
 COPY --from=deps-prod /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/src/modules/graphql/schema ./src/modules/graphql/schema
+COPY --from=build /app/proto ./proto
 
 RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 USER appuser
@@ -50,6 +51,7 @@ WORKDIR /app
 COPY --from=deps-prod /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/src/modules/graphql/schema ./src/modules/graphql/schema
+COPY --from=build /app/proto ./proto
 
 EXPOSE 3000
 CMD ["dist/main"]
@@ -69,3 +71,12 @@ COPY --from=deps-prod /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 
 CMD ["node", "dist/seed/seed.js"]
+
+FROM node:22-slim AS payments
+
+WORKDIR /app
+COPY --from=deps-prod /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/proto ./proto
+
+CMD ["node", "dist/payments-service/main"]

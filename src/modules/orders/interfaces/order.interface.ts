@@ -12,6 +12,7 @@ export interface GetOrdersFilter {
 export interface CreateOrderResult {
   order: Order;
   isExisting: boolean;
+  paymentId?: string;
 }
 
 export interface OrdersConnection {

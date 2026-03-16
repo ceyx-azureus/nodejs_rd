@@ -14,6 +14,7 @@ import { CreateOrderDto } from '../dto/create-order.dto';
 import { CreateOrderResult, GetOrdersFilter } from '../interfaces';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { randomUUID } from 'crypto';
+import { PaymentsGrpcClientService } from '../../payments/payments-grpc.service';
 
 @Injectable()
 export class OrdersService {
@@ -26,6 +27,7 @@ export class OrdersService {
     private readonly productRepository: Repository<Product>,
     private readonly dataSource: DataSource,
     private readonly amqpConnection: AmqpConnection,
+    private readonly paymentsGrpcService: PaymentsGrpcClientService,
   ) {}
 
   async getAll(filter: GetOrdersFilter): Promise<Order[]> {
@@ -138,6 +140,25 @@ export class OrdersService {
 
       savedOrder.orderItems = orderItems;
 
+      const totalAmount = orderItems.reduce(
+        (sum, item) => sum + Math.round(Number(item.price) * 100) * item.quantity,
+        0,
+      );
+
+      const paymentResult = await this.paymentsGrpcService.authorize({
+        orderId: savedOrder.id,
+        amount: totalAmount,
+        currency: 'USD',
+        idempotencyKey: idempotencyKey,
+      });
+
+      this.logger.log({
+        event: 'payment.authorized',
+        orderId: savedOrder.id,
+        paymentId: paymentResult.paymentId,
+        status: paymentResult.status,
+      });
+
       const message = {
         messageId: randomUUID(),
         orderId: savedOrder.id,
@@ -160,7 +181,7 @@ export class OrdersService {
         messageId: message.messageId,
       });
 
-      return { order: savedOrder, isExisting: false };
+      return { order: savedOrder, isExisting: false, paymentId: paymentResult.paymentId };
     } catch (error) {
       await queryRunner.rollbackTransaction();
 

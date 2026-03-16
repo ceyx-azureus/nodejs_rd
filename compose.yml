@@ -127,6 +127,8 @@ services:
       RABBITMQ_ORDERS_QUEUE: ${RABBITMQ_ORDERS_QUEUE:-orders.process}
       RABBITMQ_DLQ: ${RABBITMQ_DLQ:-orders.dlq}
       MAX_RETRY_ATTEMPTS: ${MAX_RETRY_ATTEMPTS:-3}
+      PAYMENTS_GRPC_URL: payments:50051
+      PAYMENTS_GRPC_TIMEOUT_MS: ${PAYMENTS_GRPC_TIMEOUT_MS:-5000}
     networks:
       - internal
       - public
@@ -137,6 +139,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      payments:
+        condition: service_started
     deploy:
       resources:
         limits:
@@ -225,6 +229,8 @@ services:
       RABBITMQ_ORDERS_QUEUE: ${RABBITMQ_ORDERS_QUEUE:-orders.process}
       RABBITMQ_DLQ: ${RABBITMQ_DLQ:-orders.dlq}
       MAX_RETRY_ATTEMPTS: ${MAX_RETRY_ATTEMPTS:-3}
+      PAYMENTS_GRPC_URL: payments:50051
+      PAYMENTS_GRPC_TIMEOUT_MS: ${PAYMENTS_GRPC_TIMEOUT_MS:-5000}
     networks:
       - internal
       - public
@@ -237,6 +243,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      payments:
+        condition: service_started
     deploy:
       resources:
         limits:
@@ -245,3 +253,24 @@ services:
         reservations:
           memory: 256m
           cpus: '0.25'
+
+  payments:
+    build:
+      context: .
+      target: payments
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PAYMENTS_GRPC_PORT: 50051
+    ports:
+      - '50051:50051'
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '0.50'
+        reservations:
+          memory: 128m
+          cpus: '0.10'

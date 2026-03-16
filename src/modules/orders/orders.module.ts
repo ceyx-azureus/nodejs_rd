@@ -8,11 +8,13 @@ import { OrdersService } from './services/orders.service';
 import { OrdersGqlService } from './services/orders-gql.service';
 import { OrdersConsumerService } from './services/orders-consumer.service';
 import { RabbitmqModule } from '../rabbitmq/rabbitmq.module';
+import { PaymentsGrpcModule } from '../payments/payments-grpc.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order, OrderItem, Product, User, ProcessedMessage]),
     RabbitmqModule,
+    PaymentsGrpcModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService, OrdersGqlService, OrdersConsumerService],

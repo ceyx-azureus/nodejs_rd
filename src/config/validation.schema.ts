@@ -19,6 +19,8 @@ const validationSchema = Joi.object({
   RABBITMQ_ORDERS_QUEUE: Joi.string().default('orders.process'),
   RABBITMQ_DLQ: Joi.string().default('orders.dlq'),
   MAX_RETRY_ATTEMPTS: Joi.number().default(3),
+  PAYMENTS_GRPC_URL: Joi.string().required(),
+  PAYMENTS_GRPC_TIMEOUT_MS: Joi.number().default(5000),
 });
 
 export default validationSchema;
