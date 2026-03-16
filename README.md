@@ -59,11 +59,145 @@ src/
 
 ## Dev setup
 
-- `docker compose up`
-- `npm run db:migrate`
-- `npm run db:seed`
-- `npm run prefill:orders` - prefill orders table with 100000 rows
-- `npm run start:dev`
+```bash
+# Terminal 1 — payments gRPC server (port 50051)
+npm run start:payments:dev
+
+# Terminal 2 — orders API (port 3000)
+docker compose up -d           # starts postgres, minio, rabbitmq
+npm run db:migrate
+npm run db:seed
+npm run start:dev
+```
+
+### Environment variables
+
+| Variable                   | Service    | Default           | Description                        |
+| -------------------------- | ---------- | ----------------- | ---------------------------------- |
+| `PAYMENTS_GRPC_URL`        | orders-api | `localhost:50051` | gRPC address of payments-service   |
+| `PAYMENTS_GRPC_TIMEOUT_MS` | orders-api | `5000`            | Per-call deadline in ms            |
+| `PAYMENTS_GRPC_PORT`       | payments   | `50051`           | Port payments gRPC server binds to |
+
+## Clean-start
+
+Перевіряє, що порожня БД проходить увесь ланцюжок `migrate > seed > start` без помилок.
+
+```bash
+# 1. Скинути стан
+docker compose down -v
+
+# 2. Підняти інфраструктуру + міграції + seed одним кроком
+docker compose up --build --abort-on-container-exit --exit-code-from seed migrate seed
+
+# 3. Переконатися, що всі сервіси стартують
+docker compose up --build api
+```
+
+RabbitMQ Management UI: http://localhost:15672 (guest / guest)
+
+---
+
+## gRPC — Payments Service
+
+### Proto contract
+
+`proto/payments.proto` — shared by both services (no code import, only the file).
+
+```
+service Payments {
+  Authorize(AuthorizeRequest)         → AuthorizeResponse   { paymentId, status }
+  GetPaymentStatus(...)               → { paymentId, status }
+  Capture / Refund                    → stub handlers
+}
+```
+
+### How it is wired
+
+| Role           | File                       | Details                                                                                 |
+| -------------- | -------------------------- | --------------------------------------------------------------------------------------- |
+| gRPC server    | `payments-service/main.ts` | Standalone NestJS microservice, Transport.GRPC                                          |
+| gRPC handlers  | `payments.controller.ts`   | `@GrpcMethod` decorators                                                                |
+| gRPC client    | `payments-grpc.module.ts`  | `ClientsModule.registerAsync`, url from `PAYMENTS_GRPC_URL`                             |
+| Client wrapper | `payments-grpc.service.ts` | deadline from `PAYMENTS_GRPC_TIMEOUT_MS`, retry on UNAVAILABLE, gRPC→HTTP error mapping |
+
+### Happy path (curl)
+
+```bash
+# 1. Register / login
+TOKEN=$(curl -s -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"<email>","password":"<pass>"}' | jq -r .accessToken)
+
+# 2. Get a product id
+PRODUCT_ID=$(curl -s http://localhost:8080/products \
+  -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+
+# 3. Create order — triggers Payments.Authorize via gRPC
+curl -s -X POST http://localhost:8080/orders \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "idempotency-key: $(python3 -c 'import uuid; print(uuid.uuid4())')" \
+  -d "{\"userId\":\"<userId>\",\"items\":[{\"productId\":\"$PRODUCT_ID\",\"quantity\":1}]}" \
+  | jq '{id, status, paymentId}'
+# → { "id": "...", "status": "PENDING", "paymentId": "..." }
+```
+
+---
+
+## RabbitMQ — Async Orders Workflow
+
+### Topology
+
+```
+Producer (POST /orders)
+  └─► orders.exchange  [direct]
+        ├─► routing key: order.process  ──► orders.process queue  ──► Worker (consumer)
+        └─► routing key: order.dlq      ──► orders.dlq queue
+```
+
+**Exchange:** `orders.exchange` (direct)
+**Queues:**
+
+- `orders.process` — main processing queue
+- `orders.dlq` — dead-letter queue (messages that exhausted retries)
+
+### Demo Scenarios
+
+**1. Happy path**
+
+```bash
+# 1. POST /orders → returns { id, status: "PENDING" }
+# 2. Worker picks it up, inserts into processed_messages, updates order status → PROCESSED
+# 3. GET /orders?status=PROCESSED — order appears
+```
+
+**2. Retry simulation**
+
+```
+In OrdersConsumerService.handleMessage() temporarily add:
+  if (attempt < 2) throw new Error('simulated failure');
+
+POST /orders — watch logs:
+  { result: 'retry', attempt: 1 }
+  { result: 'retry', attempt: 2 }
+  { result: 'success', attempt: 2 }
+```
+
+**3. DLQ (Dead-Letter Queue)**
+
+```
+Set MAX_RETRY_ATTEMPTS=3 and throw an unconditional error in the handler.
+After 3 retries the message lands in orders.dlq.
+Check http://localhost:15672 → Queues → orders.dlq → Get messages.
+```
+
+**4. Idempotency guard**
+
+```
+# Publish the same messageId twice (e.g. via RabbitMQ Management UI or direct amqplib publish).
+# Second delivery logs: { result: 'duplicate, skipping' }
+# DB has exactly one row in processed_messages for that messageId.
+```
 
 ---
 

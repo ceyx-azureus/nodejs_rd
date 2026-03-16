@@ -12,15 +12,22 @@ import { Product } from '../../products/product.entity';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { CreateOrderResult, GetOrdersFilter } from '../interfaces';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { randomUUID } from 'crypto';
+import { PaymentsGrpcClientService } from '../../payments/payments-grpc.service';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectRepository(Order)
     private readonly repository: Repository<Order>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly dataSource: DataSource,
+    private readonly amqpConnection: AmqpConnection,
+    private readonly paymentsGrpcService: PaymentsGrpcClientService,
   ) {}
 
   async getAll(filter: GetOrdersFilter): Promise<Order[]> {
@@ -132,7 +139,49 @@ export class OrdersService {
       await queryRunner.commitTransaction();
 
       savedOrder.orderItems = orderItems;
-      return { order: savedOrder, isExisting: false };
+
+      const totalAmount = orderItems.reduce(
+        (sum, item) => sum + Math.round(Number(item.price) * 100) * item.quantity,
+        0,
+      );
+
+      const paymentResult = await this.paymentsGrpcService.authorize({
+        orderId: savedOrder.id,
+        amount: totalAmount,
+        currency: 'USD',
+        idempotencyKey: idempotencyKey,
+      });
+
+      this.logger.log({
+        event: 'payment.authorized',
+        orderId: savedOrder.id,
+        paymentId: paymentResult.paymentId,
+        status: paymentResult.status,
+      });
+
+      const message = {
+        messageId: randomUUID(),
+        orderId: savedOrder.id,
+        createdAt: new Date().toISOString(),
+        attempt: 0,
+        correlationId: randomUUID(),
+        producer: 'orders-api',
+        eventName: 'order.created',
+      };
+
+      await this.amqpConnection.publish(
+        'orders.exchange',
+        'order.process',
+        message,
+      );
+
+      this.logger.log({
+        event: 'order.published',
+        orderId: savedOrder.id,
+        messageId: message.messageId,
+      });
+
+      return { order: savedOrder, isExisting: false, paymentId: paymentResult.paymentId };
     } catch (error) {
       await queryRunner.rollbackTransaction();
 

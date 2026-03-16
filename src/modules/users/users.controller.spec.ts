@@ -1,31 +1,34 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+import { User } from './user.entity';
 
 describe('UsersController', () => {
   let usersController: UsersController;
+  let usersService: jest.Mocked<UsersService>;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [],
+      providers: [
+        {
+          provide: UsersService,
+          useValue: { getAll: jest.fn() },
+        },
+      ],
     }).compile();
 
     usersController = app.get<UsersController>(UsersController);
+    usersService = app.get(UsersService);
   });
 
   describe('root', () => {
-    it('should return users from jsonplaceholder', async () => {
-      const mockUsers = [{ id: 1, name: 'Leanne Graham' }];
+    it('should return users from UsersService', async () => {
+      const mockUsers: User[] = [{ id: '1', email: 'test@example.com' } as User];
+      usersService.getAll.mockResolvedValue(mockUsers);
 
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockUsers,
-      } as any);
-
-      await expect(usersController.getUsers()).resolves.toEqual(mockUsers);
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://jsonplaceholder.typicode.com/users',
-      );
+      await expect(usersController.getAll()).resolves.toEqual(mockUsers);
+      expect(usersService.getAll).toHaveBeenCalled();
     });
   });
 });
